@@ -31,7 +31,7 @@ class Main extends PluginBase implements Listener {
     private $messages = [];
 
     /** @var array */
-    private $messageShown = []; // Para evitar mostrar el mensaje múltiples veces
+    private $messageShown = []; // To prevent showing the message multiple times
 
     /**
      * Called when the plugin is enabled.
@@ -44,7 +44,7 @@ class Main extends PluginBase implements Listener {
         $this->getServer()->getPluginManager()->registerEvents($this, $this);
         $this->getLogger()->info(TextFormat::GREEN . "CustomAreas by SoyDavs has been enabled.");
 
-        // Mostrar el mensaje ASCII art al iniciar el servidor
+        // Display the ASCII art message on server start
         $this->displayStartupMessage();
     }
 
@@ -69,7 +69,7 @@ class Main extends PluginBase implements Listener {
     private function loadRegions() : void {
         $regions = $this->config->get("regions", []);
         foreach($regions as $name => $data){
-            // Validar claves requeridas
+            // Validate required keys
             if(!isset($data["min"], $data["max"], $data["world"], $data["permission"], $data["message"])){
                 $this->getLogger()->warning(TextFormat::YELLOW . "Region '$name' is missing required keys. Skipping.");
                 continue;
@@ -81,7 +81,7 @@ class Main extends PluginBase implements Listener {
             $permission = $data["permission"];
             $message = $data["message"];
 
-            // Asegurarse de que el mundo existe
+            // Ensure the world exists
             if(!$this->getServer()->getWorldManager()->isWorldLoaded($world)){
                 $this->getLogger()->warning(TextFormat::YELLOW . "World '$world' for region '$name' is not loaded. Skipping.");
                 continue;
@@ -258,8 +258,9 @@ class Main extends PluginBase implements Listener {
                 return;
             }
 
-            $areaName = strtolower(trim($data[0]));
-            $message = trim($data[1]);
+            // Safely retrieve and trim inputs, providing default empty strings if null
+            $areaName = strtolower(trim($data[0] ?? ''));
+            $message = trim($data[1] ?? '');
 
             if(empty($areaName)){
                 $player->sendMessage(TextFormat::RED . "Area name cannot be empty.");
@@ -284,6 +285,7 @@ class Main extends PluginBase implements Listener {
         });
 
         $form->setTitle($this->getMessage("gui_title"));
+        $form->addLabel($this->getMessage("create_area_content")); // Added a label for content
         $form->addInput($this->getMessage("create_area_prompt"), "Area Name");
         $form->addInput($this->getMessage("region_message_prompt"), "Region Entry Message", $this->getMessage("region_message_default", ["name" => "Area Name"]));
         $form->sendToPlayer($sender);
@@ -424,12 +426,13 @@ class Main extends PluginBase implements Listener {
                 return;
             }
 
-            $newName = strtolower(trim($data[0]));
+            // Safely retrieve and trim inputs, providing default empty strings if null
+            $newName = strtolower(trim($data[0] ?? ''));
             $newName = empty($newName) ? $areaName : $newName;
-            $newMessage = trim($data[1]);
+            $newMessage = trim($data[1] ?? '');
 
-            $changePos1 = $data[2] ?? false;
-            $changePos2 = $data[3] ?? false;
+            $changePos1 = isset($data[2]) ? (bool)$data[2] : false;
+            $changePos2 = isset($data[3]) ? (bool)$data[3] : false;
 
             // Check if new name already exists
             if($newName !== $areaName && isset($this->regions[$newName])){
@@ -478,7 +481,7 @@ class Main extends PluginBase implements Listener {
         });
 
         $form->setTitle($this->getMessage("edit_area_title"));
-        $form->setContent($this->getMessage("edit_area_content", ["name" => $areaName]));
+        $form->addLabel($this->getMessage("edit_area_content", ["name" => $areaName])); // Replaced setContent with addLabel
         $form->addInput($this->getMessage("edit_area_name_prompt"), "New Area Name", $areaName);
         $form->addInput($this->getMessage("region_message_prompt"), "Region Entry Message", $currentMessage);
         $form->addToggle($this->getMessage("edit_area_change_pos1_prompt"), false);
@@ -536,7 +539,7 @@ class Main extends PluginBase implements Listener {
             $sender->sendMessage(TextFormat::GREEN . $this->getMessage("pos2_prompt"));
             $this->playerData[$sender->getName()]["step"] = "pos2";
         } elseif ($state === "editing"){
-            if($this->playerData[$sender->getName()]["change_pos2"]){
+            if(isset($this->playerData[$sender->getName()]["change_pos2"]) && $this->playerData[$sender->getName()]["change_pos2"]){
                 $sender->sendMessage(TextFormat::GREEN . $this->getMessage("pos2_prompt"));
                 $this->playerData[$sender->getName()]["step"] = "pos2";
             } else {
@@ -625,7 +628,7 @@ class Main extends PluginBase implements Listener {
             // Clear player data
             unset($this->playerData[$playerName]);
         } elseif ($state === "editing"){
-            $changePos2 = $this->playerData[$playerName]["change_pos2"];
+            $changePos2 = isset($this->playerData[$playerName]["change_pos2"]) ? $this->playerData[$playerName]["change_pos2"] : false;
             if($changePos2){
                 $this->regions[$areaName]["max"] = $pos2;
                 $this->saveRegions();
@@ -654,10 +657,10 @@ class Main extends PluginBase implements Listener {
             }
 
             if($this->isInside($to, $region["min"], $region["max"])){
-                // Log para depuración
+                // Debug log
                 $this->getLogger()->info("Player $playerName entered region $name.");
 
-                // Verificar permisos usando hasPermission
+                // Check permissions using hasPermission
                 if(!$player->hasPermission($region["permission"])){
                     $this->getLogger()->info("Player $playerName does NOT have permission {$region['permission']} to enter region $name.");
                     $event->cancel();
@@ -665,7 +668,7 @@ class Main extends PluginBase implements Listener {
                     return;
                 } else {
                     $this->getLogger()->info("Player $playerName has permission {$region['permission']} to enter region $name.");
-                    // Mostrar mensaje personalizado
+                    // Display custom message
                     if(!isset($this->messageShown[$playerName][$name])){
                         $message = str_replace("{name}", $name, $region["message"]);
                         $player->sendMessage(TextFormat::GOLD . $message);
@@ -673,7 +676,7 @@ class Main extends PluginBase implements Listener {
                     }
                 }
             } else {
-                // Remover el mensaje si el jugador sale de la región
+                // Remove the message if the player leaves the region
                 if(isset($this->messageShown[$playerName][$name])){
                     unset($this->messageShown[$playerName][$name]);
                 }
@@ -695,17 +698,17 @@ class Main extends PluginBase implements Listener {
                $pos->z >= min($min->z, $max->z) && $pos->z <= max($min->z, $max->z);
     }
 
-        /**
+    /**
      * Displays the ASCII art startup message.
      */
     private function displayStartupMessage() : void {
         $asciiArt = <<<EOT
-       ____                 _                            _                                
-      / ___|  _   _   ___  | |_    ___    _ __ ___      / \     _ __    ___    __ _   ___ 
-     | |     | | | | / __| | __|  / _ \  | '_ ` _ \    / _ \   | '__|  / _ \  / _` | / __|
-     | |___  | |_| | \__ \ | |_  | (_) | | | | | | |  / ___ \  | |    |  __/ | (_| | \__ \
-      \____|  \__,_| |___/  \__|  \___/  |_| |_| |_| /_/   \_\ |_|     \___|  \__,_| |___/
-                                                                            by SoyDavs
+           ____                 _                            _                                
+          / ___|  _   _   ___  | |_    ___    _ __ ___      / \     _ __    ___    __ _   ___ 
+         | |     | | | | / __| | __|  / _ \  | '_  _ \    / _ \   | '__|  / _ \  / _ | / __|
+         | |___  | |_| | \__ \ | |_  | (_) | | | | | | |  / ___ \  | |    |  __/ | (_| | \__ \
+          \____|  \__,_| |___/  \__|  \___/  |_| |_| |_| /_/   \_\ |_|     \___|  \__,_| |___/
+                                                                                by SoyDavs
     EOT;
 
         $this->getLogger()->info(TextFormat::AQUA . $asciiArt);
