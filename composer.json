@@ -1,0 +1,13 @@
+{
+    "name": "soydavs/customareas",
+    "description": "CustomAreas Plugin for PocketMine-MP",
+    "type": "project",
+    "require": {
+        "vecnavium/forms-ui": "^1.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "CustomAreas\\": "src/CustomAreas/"
+        }
+    }
+}

@@ -1,0 +1,42 @@
+name: CustomAreas
+version: 2.0.0
+main: 'CustomAreas\Main'
+api: [5.0.0]
+author: SoyDavs
+description: >
+  A powerful plugin for server administrators to enhance region security.
+  Restricts access to designated areas, ensuring only players with specific
+  permissions can enter predefined regions.
+commands:
+  ca:
+    description: CustomAreas main command.
+    usage: '/ca <create|pos1|pos2|remove|update|list|gui>'
+    permission: customareas.command
+permissions:
+  customareas.entry:
+    description: Allows players to enter restricted regions.
+    default: false
+  customareas.command:
+    description: Allows use of CustomAreas commands.
+    default: op
+  customareas.command.create:
+    description: Allows creating new regions.
+    default: op
+  customareas.command.pos1:
+    description: Allows setting the first position for a region.
+    default: op
+  customareas.command.pos2:
+    description: Allows setting the second position for a region.
+    default: op
+  customareas.command.remove:
+    description: Allows removing regions.
+    default: op
+  customareas.command.update:
+    description: Allows updating existing regions.
+    default: op
+  customareas.command.list:
+    description: Allows listing all regions.
+    default: op
+  customareas.command.gui:
+    description: Allows accessing the region management GUI.
+    default: op
