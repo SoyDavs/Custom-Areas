@@ -5,47 +5,36 @@
 #  \____|  \__,_| |___/  \__|  \___/  |_| |_| |_| /_/   \_\ |_|     \___|  \__,_| |___/
 #																			by SoyDavs
 messages:
-  gui_title: "Custom Areas"
-  gui_content: "Choose an action:"
-  gui_buttons:
-    - "Create Area"    # Index 0
-    - "Edit Area"      # Index 1
-    - "Remove Area"    # Index 2
-    - "List Areas"     # Index 3
-    - "Cancel"         # Index 4
-
-  confirm_remove_title: "Confirm Removal"
-  confirm_remove_content: "Are you sure you want to remove the area '{name}'?"
-  
   no_permission: "You do not have permission to use this command."
-  usage: "/ca <create|edit|remove|list|gui|pos1|pos2>"
-  
-  pos1_prompt: "Please set position 1 using /ca pos1."
-  pos2_prompt: "Please set position 2 using /ca pos2."
-  
-  region_exists: "The region '{name}' already exists."
-  
-  create_success: "Region '{name}' has been created successfully."
-  remove_success: "Region '{name}' has been removed successfully."
-  edit_success: "Region '{name}' has been updated successfully."
-  
+  region_exists: "A region with the name '{name}' already exists."
+  region_message_default: "Welcome to {name}!"
+  usage: "Usage: /ca <create|edit|remove|list|gui|pos1|pos2>"
+  gui_title: "Custom Areas"
+  gui_content: "Please choose an option:"
+  gui_buttons:
+    - "Create Area"
+    - "Edit Area"
+    - "Remove Area"
+    - "List Areas"
+    - "Cancel"
+  remove_prompt: "Select an area to remove:"
+  confirm_remove_title: "Confirm Removal"
+  confirm_remove_content: "Are you sure you want to remove the region '{name}'?"
+  edit_prompt: "Select an area to edit:"
+  edit_success: "The region '{name}' has been successfully edited."
+  create_success: "The region '{name}' has been successfully created."
+  edit_area_title: "Edit Area Details"
+  edit_area_content: "Editing details for '{name}':"
+  edit_area_name_prompt: "New Area Name"
+  edit_area_change_pos1_prompt: "Change Position 1"
+  edit_area_change_pos2_prompt: "Change Position 2"
+  pos1_prompt: "Please set Position 1 using /ca pos1"
+  pos2_prompt: "Please set Position 2 using /ca pos2"
   edit_pos1_success: "Position 1 for region '{name}' has been updated."
   edit_pos2_success: "Position 2 for region '{name}' has been updated."
-  
   entering_region_denied: "You do not have permission to enter the region '{name}'."
-  
-  list_areas: "List of defined areas:"
-  list_areas_empty: "No areas defined."
-  
-  edit_area_title: "Edit Area"
-  edit_area_content: "Modify the area details below:"
-  
-  edit_area_name_prompt: "New Area Name"
-  edit_area_change_pos1_prompt: "Change Position 1?"
-  edit_area_change_pos2_prompt: "Change Position 2?"
-  
-  region_message_prompt: "Enter the custom entry message for this region:"
-  region_message_default: "Welcome to {name}!"
+  list_areas_empty: "There are no regions defined."
+  list_areas: "Defined Regions:"
 
 
 regions: {}
