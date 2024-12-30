@@ -1,0 +1,11 @@
+# Poggit-CI Manifest. Open the CI at https://poggit.pmmp.io/ci/Davs125/CustomAreas
+build-by-default: true
+branches:
+  - main
+projects:
+  CustomAreas:
+    path: ""
+    icon: "icon.jpeg"
+    libs:
+      - src: Vecnavium/FormsUI/libFormsUI
+        version: ^2.1.1
