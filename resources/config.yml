@@ -1,9 +1,10 @@
-#   ____                 _                            _                                
+#   ____                 _                            _                                 
 #  / ___|  _   _   ___  | |_    ___    _ __ ___      / \     _ __    ___    __ _   ___ 
 # | |     | | | | / __| | __|  / _ \  | '_ ` _ \    / _ \   | '__|  / _ \  / _` | / __|
 # | |___  | |_| | \__ \ | |_  | (_) | | | | | | |  / ___ \  | |    |  __/ | (_| | \__ \
 #  \____|  \__,_| |___/  \__|  \___/  |_| |_| |_| /_/   \_\ |_|     \___|  \__,_| |___/
 #																			by SoyDavs
+
 messages:
   no_permission: "You do not have permission to use this command."
   region_exists: "A region with the name '{name}' already exists."
@@ -35,6 +36,10 @@ messages:
   entering_region_denied: "You do not have permission to enter the region '{name}'."
   list_areas_empty: "There are no regions defined."
   list_areas: "Defined Regions:"
-
+  
+  create_area_content: "Please provide the name for the new area."
+  create_area_prompt: "Enter the name of the new area:"
+  region_message_prompt: "Enter a welcome message for the region (optional):"
+  remove_success: "The area '{name}' was removed successfully"
 
 regions: {}

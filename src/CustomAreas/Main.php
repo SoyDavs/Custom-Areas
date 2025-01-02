@@ -182,7 +182,7 @@ class Main extends PluginBase implements Listener {
         return false;
     }
 
-    /**
+        /**
      * Retrieves a message from the configuration with optional placeholders.
      *
      * @param string $key The key of the message.
@@ -196,11 +196,13 @@ class Main extends PluginBase implements Listener {
 
         $message = $this->messages[$key];
 
+        // Convert placeholders to strings before replacement
+        $processedPlaceholders = [];
         foreach($placeholders as $placeholder => $value){
-            $message = str_replace("{{$placeholder}}", $value, $message);
+            $processedPlaceholders['{' . $placeholder . '}'] = (string)$value;
         }
 
-        return $message;
+        return strtr($message, $processedPlaceholders);
     }
 
     /**
@@ -242,7 +244,7 @@ class Main extends PluginBase implements Listener {
         $form->sendToPlayer($sender);
     }
 
-    /**
+	/**
      * Opens the form to create a new area.
      *
      * @param CommandSender $sender The sender to whom the form is sent.
@@ -258,21 +260,26 @@ class Main extends PluginBase implements Listener {
                 return;
             }
 
-            // Safely retrieve and trim inputs, providing default empty strings if null
-            $areaName = strtolower(trim($data[0] ?? ''));
-            $message = trim($data[1] ?? '');
+            // Debug the entire form data
+            $this->getLogger()->debug("Form submission data: " . json_encode($data));
 
-            if(empty($areaName)){
+            // Get the area name from the correct index (should be 1 since we have a label at index 0)
+            $areaName = trim($data[1] ?? '');
+            $message = trim($data[2] ?? '');
+
+            if($areaName === ''){
                 $player->sendMessage(TextFormat::RED . "Area name cannot be empty.");
                 return;
             }
+
+            $areaName = strtolower($areaName);
 
             if(isset($this->regions[$areaName])){
                 $player->sendMessage(TextFormat::RED . $this->getMessage("region_exists", ["name" => $areaName]));
                 return;
             }
 
-            // Temporarily store area data for setting pos1 and pos2
+            // Store data for area creation
             $this->playerData[$player->getName()] = [
                 "state" => "creating",
                 "area_name" => $areaName,
@@ -285,85 +292,111 @@ class Main extends PluginBase implements Listener {
         });
 
         $form->setTitle($this->getMessage("gui_title"));
-        $form->addLabel($this->getMessage("create_area_content")); // Added a label for content
-        $form->addInput($this->getMessage("create_area_prompt"), "Area Name");
-        $form->addInput($this->getMessage("region_message_prompt"), "Region Entry Message", $this->getMessage("region_message_default", ["name" => "Area Name"]));
+        $form->addLabel($this->getMessage("create_area_content")); // This will be index 0
+        $form->addInput($this->getMessage("create_area_prompt"), "Area Name", ""); // This will be index 1
+        $form->addInput($this->getMessage("region_message_prompt"), "Region Entry Message", 
+            $this->getMessage("region_message_default", ["name" => "Area Name"])); // This will be index 2
         $form->sendToPlayer($sender);
     }
 
-    /**
-     * Opens the form to remove an existing area.
-     *
-     * @param CommandSender $sender The sender to whom the form is sent.
-     */
-    private function openRemoveAreaForm(CommandSender $sender) : void {
-        if(!$sender instanceof Player){
-            $sender->sendMessage(TextFormat::RED . "This command can only be used by players.");
-            return;
-        }
 
-        if(empty($this->regions)){
-            $sender->sendMessage(TextFormat::YELLOW . $this->getMessage("list_areas_empty"));
-            return;
-        }
-
-        $form = new SimpleForm(function (Player $player, ?int $data) {
-            if($data === null){
-                return;
-            }
-
-            $areaNames = array_keys($this->regions);
-            if($data >= count($areaNames)){
-                // Cancel button was pressed
-                return;
-            }
-
-            $selectedArea = $areaNames[$data];
-
-            // Confirm deletion
-            $this->confirmRemoveArea($player, $selectedArea);
-        });
-
-        $form->setTitle($this->getMessage("gui_title"));
-        $form->setContent($this->getMessage("remove_prompt"));
-
-        foreach(array_keys($this->regions) as $areaName){
-            $form->addButton($areaName);
-        }
-
-        $form->addButton($this->messages["gui_buttons"][4]); // Cancel
-
-        $form->sendToPlayer($sender);
+	/**
+ * Opens the form to remove an existing area.
+ *
+ * @param CommandSender $sender The sender to whom the form is sent.
+ */
+private function openRemoveAreaForm(CommandSender $sender) : void {
+    if(!$sender instanceof Player){
+        $sender->sendMessage(TextFormat::RED . "This command can only be used by players.");
+        return;
     }
 
-    /**
-     * Confirms the removal of an area.
-     *
-     * @param Player $player The player who initiated the removal.
-     * @param string $areaName The name of the area to remove.
-     */
-    private function confirmRemoveArea(Player $player, string $areaName) : void {
-        $form = new SimpleForm(function (Player $player, ?int $data) use ($areaName) {
-            if($data === null){
-                return;
-            }
+    if(empty($this->regions)){
+        $sender->sendMessage(TextFormat::YELLOW . $this->getMessage("list_areas_empty"));
+        return;
+    }
 
-            if($data === 0){
-                // Confirm removal
+    // Store area names in array to maintain order
+    $areaNames = array_keys($this->regions);
+
+    $form = new SimpleForm(function (Player $player, ?int $data) use ($areaNames) {
+        if($data === null){
+            return;
+        }
+
+        if($data >= count($areaNames)){
+            // Cancel button was pressed
+            return;
+        }
+
+        // Get the area name from our stored array using the index
+        $selectedArea = (string)$areaNames[$data];
+        // Confirm deletion
+        $this->confirmRemoveArea($player, $selectedArea);
+    });
+
+    $form->setTitle((string)$this->getMessage("gui_title"));
+    $form->setContent((string)$this->getMessage("remove_prompt"));
+
+    // Add area buttons
+    foreach($areaNames as $areaName){
+        $form->addButton((string)$areaName);
+    }
+
+    // Add cancel button
+    if(isset($this->messages["gui_buttons"][4])){
+        $form->addButton((string)$this->messages["gui_buttons"][4]);
+    } else {
+        $form->addButton("Cancel");
+    }
+
+    $form->sendToPlayer($sender);
+}
+
+/**
+ * Confirms the removal of an area.
+ *
+ * @param Player $player The player who initiated the removal.
+ * @param string $areaName The name of the area to remove.
+ */
+private function confirmRemoveArea(Player $player, string $areaName) : void {
+    $form = new SimpleForm(function (Player $player, ?int $data) use ($areaName) {
+        if($data === null){
+            return;
+        }
+
+        if($data === 0){
+            // Confirm removal
+            if(isset($this->regions[$areaName])){
                 unset($this->regions[$areaName]);
                 $this->saveRegions();
                 $player->sendMessage(TextFormat::GREEN . $this->getMessage("remove_success", ["name" => $areaName]));
+            } else {
+                $player->sendMessage(TextFormat::RED . $this->getMessage("region_not_found", ["name" => $areaName]));
             }
-            // Else, cancel removal
-        });
+        }
+        // Else, cancel removal
+    });
 
-        $form->setTitle($this->getMessage("confirm_remove_title"));
-        $form->setContent($this->getMessage("confirm_remove_content", ["name" => $areaName]));
-        $form->addButton($this->messages["gui_buttons"][0]); // Confirm
-        $form->addButton($this->messages["gui_buttons"][4]); // Cancel
-
-        $form->sendToPlayer($player);
+    $form->setTitle((string)$this->getMessage("confirm_remove_title"));
+    $form->setContent((string)$this->getMessage("confirm_remove_content", ["name" => $areaName]));
+    
+    // Add confirm button
+    if(isset($this->messages["gui_buttons"][0])){
+        $form->addButton((string)$this->messages["gui_buttons"][0]);
+    } else {
+        $form->addButton("Confirm");
     }
+    
+    // Add cancel button
+    if(isset($this->messages["gui_buttons"][4])){
+        $form->addButton((string)$this->messages["gui_buttons"][4]);
+    } else {
+        $form->addButton("Cancel");
+    }
+
+    $form->sendToPlayer($player);
+}
 
     /**
      * Opens the form to edit an existing area.
