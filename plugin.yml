@@ -3,7 +3,7 @@ version: 2.0.0
 main: 'CustomAreas\Main'
 api: [5.0.0]
 author: SoyDavs
-depend:
+softdepend:
   - FormsUI
 description: >
   A powerful plugin for server administrators to enhance region security.
