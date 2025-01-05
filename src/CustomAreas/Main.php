@@ -43,9 +43,6 @@ class Main extends PluginBase implements Listener {
         $this->loadRegions();
         $this->getServer()->getPluginManager()->registerEvents($this, $this);
         $this->getLogger()->info(TextFormat::GREEN . "CustomAreas by SoyDavs has been enabled.");
-
-        // Display the ASCII art message on server start
-        $this->displayStartupMessage();
     }
 
     /**
@@ -57,14 +54,14 @@ class Main extends PluginBase implements Listener {
     }
 
     /**
-     * Loads messages from the config.yml file.
+     * Loads messages from config.yml.
      */
     private function loadMessages() : void {
         $this->messages = $this->config->get("messages", []);
     }
 
     /**
-     * Loads regions from the config.yml file.
+     * Loads regions from config.yml.
      */
     private function loadRegions() : void {
         $regions = $this->config->get("regions", []);
@@ -81,7 +78,7 @@ class Main extends PluginBase implements Listener {
             $permission = $data["permission"];
             $message = $data["message"];
 
-            // Ensure the world exists
+            // Check if world is loaded
             if(!$this->getServer()->getWorldManager()->isWorldLoaded($world)){
                 $this->getLogger()->warning(TextFormat::YELLOW . "World '$world' for region '$name' is not loaded. Skipping.");
                 continue;
@@ -99,7 +96,7 @@ class Main extends PluginBase implements Listener {
     }
 
     /**
-     * Saves regions to the config.yml file.
+     * Saves regions to config.yml.
      */
     private function saveRegions() : void {
         $regions = [];
@@ -127,11 +124,11 @@ class Main extends PluginBase implements Listener {
     /**
      * Handles commands related to CustomAreas.
      *
-     * @param CommandSender $sender The sender of the command.
-     * @param Command $command The command that was executed.
-     * @param string $label The alias of the command which was used.
-     * @param array $args The arguments passed to the command.
-     * @return bool Returns true if the command was successfully handled.
+     * @param CommandSender $sender
+     * @param Command $command
+     * @param string $label
+     * @param array $args
+     * @return bool
      */
     public function onCommand(CommandSender $sender, Command $command, string $label, array $args) : bool {
         if($command->getName() === "ca"){
@@ -182,12 +179,12 @@ class Main extends PluginBase implements Listener {
         return false;
     }
 
-        /**
+    /**
      * Retrieves a message from the configuration with optional placeholders.
      *
-     * @param string $key The key of the message.
-     * @param array $placeholders Associative array of placeholders to replace in the message.
-     * @return string The formatted message.
+     * @param string $key
+     * @param array $placeholders
+     * @return string
      */
     private function getMessage(string $key, array $placeholders = []) : string {
         if(!isset($this->messages[$key])){
@@ -208,7 +205,7 @@ class Main extends PluginBase implements Listener {
     /**
      * Opens the main CustomAreas GUI form.
      *
-     * @param CommandSender $sender The sender to whom the form is sent.
+     * @param CommandSender $sender
      */
     private function openMainForm(CommandSender $sender) : void {
         $form = new SimpleForm(function (Player $player, ?int $data) {
@@ -244,10 +241,10 @@ class Main extends PluginBase implements Listener {
         $form->sendToPlayer($sender);
     }
 
-	/**
+    /**
      * Opens the form to create a new area.
      *
-     * @param CommandSender $sender The sender to whom the form is sent.
+     * @param CommandSender $sender
      */
     private function openCreateAreaForm(CommandSender $sender) : void {
         if(!$sender instanceof Player){
@@ -263,7 +260,7 @@ class Main extends PluginBase implements Listener {
             // Debug the entire form data
             $this->getLogger()->debug("Form submission data: " . json_encode($data));
 
-            // Get the area name from the correct index (should be 1 since we have a label at index 0)
+            // Get the area name and message
             $areaName = trim($data[1] ?? '');
             $message = trim($data[2] ?? '');
 
@@ -285,123 +282,127 @@ class Main extends PluginBase implements Listener {
                 "area_name" => $areaName,
                 "step" => "pos1",
                 "world" => $player->getWorld()->getFolderName(),
-                "message" => empty($message) ? $this->getMessage("region_message_default", ["name" => $areaName]) : $message
+                "message" => empty($message)
+                    ? $this->getMessage("region_message_default", ["name" => $areaName])
+                    : $message
             ];
 
             $player->sendMessage(TextFormat::GREEN . $this->getMessage("pos1_prompt"));
         });
 
         $form->setTitle($this->getMessage("gui_title"));
-        $form->addLabel($this->getMessage("create_area_content")); // This will be index 0
-        $form->addInput($this->getMessage("create_area_prompt"), "Area Name", ""); // This will be index 1
-        $form->addInput($this->getMessage("region_message_prompt"), "Region Entry Message", 
-            $this->getMessage("region_message_default", ["name" => "Area Name"])); // This will be index 2
+        $form->addLabel($this->getMessage("create_area_content")); 
+        $form->addInput($this->getMessage("create_area_prompt"), "Area Name", "");
+        $form->addInput(
+            $this->getMessage("region_message_prompt"),
+            "Region Entry Message",
+            $this->getMessage("region_message_default", ["name" => "Area Name"])
+        );
         $form->sendToPlayer($sender);
     }
 
-
-	/**
- * Opens the form to remove an existing area.
- *
- * @param CommandSender $sender The sender to whom the form is sent.
- */
-private function openRemoveAreaForm(CommandSender $sender) : void {
-    if(!$sender instanceof Player){
-        $sender->sendMessage(TextFormat::RED . "This command can only be used by players.");
-        return;
-    }
-
-    if(empty($this->regions)){
-        $sender->sendMessage(TextFormat::YELLOW . $this->getMessage("list_areas_empty"));
-        return;
-    }
-
-    // Store area names in array to maintain order
-    $areaNames = array_keys($this->regions);
-
-    $form = new SimpleForm(function (Player $player, ?int $data) use ($areaNames) {
-        if($data === null){
+    /**
+     * Opens the form to remove an existing area.
+     *
+     * @param CommandSender $sender
+     */
+    private function openRemoveAreaForm(CommandSender $sender) : void {
+        if(!$sender instanceof Player){
+            $sender->sendMessage(TextFormat::RED . "This command can only be used by players.");
             return;
         }
 
-        if($data >= count($areaNames)){
-            // Cancel button was pressed
+        if(empty($this->regions)){
+            $sender->sendMessage(TextFormat::YELLOW . $this->getMessage("list_areas_empty"));
             return;
         }
 
-        // Get the area name from our stored array using the index
-        $selectedArea = (string)$areaNames[$data];
-        // Confirm deletion
-        $this->confirmRemoveArea($player, $selectedArea);
-    });
+        // Store area names in array to maintain order
+        $areaNames = array_keys($this->regions);
 
-    $form->setTitle((string)$this->getMessage("gui_title"));
-    $form->setContent((string)$this->getMessage("remove_prompt"));
-
-    // Add area buttons
-    foreach($areaNames as $areaName){
-        $form->addButton((string)$areaName);
-    }
-
-    // Add cancel button
-    if(isset($this->messages["gui_buttons"][4])){
-        $form->addButton((string)$this->messages["gui_buttons"][4]);
-    } else {
-        $form->addButton("Cancel");
-    }
-
-    $form->sendToPlayer($sender);
-}
-
-/**
- * Confirms the removal of an area.
- *
- * @param Player $player The player who initiated the removal.
- * @param string $areaName The name of the area to remove.
- */
-private function confirmRemoveArea(Player $player, string $areaName) : void {
-    $form = new SimpleForm(function (Player $player, ?int $data) use ($areaName) {
-        if($data === null){
-            return;
-        }
-
-        if($data === 0){
-            // Confirm removal
-            if(isset($this->regions[$areaName])){
-                unset($this->regions[$areaName]);
-                $this->saveRegions();
-                $player->sendMessage(TextFormat::GREEN . $this->getMessage("remove_success", ["name" => $areaName]));
-            } else {
-                $player->sendMessage(TextFormat::RED . $this->getMessage("region_not_found", ["name" => $areaName]));
+        $form = new SimpleForm(function (Player $player, ?int $data) use ($areaNames) {
+            if($data === null){
+                return;
             }
+
+            if($data >= count($areaNames)){
+                // Cancel button was pressed
+                return;
+            }
+
+            // Get the area name from our stored array using the index
+            $selectedArea = (string)$areaNames[$data];
+            // Confirm deletion
+            $this->confirmRemoveArea($player, $selectedArea);
+        });
+
+        $form->setTitle((string)$this->getMessage("gui_title"));
+        $form->setContent((string)$this->getMessage("remove_prompt"));
+
+        // Add area buttons
+        foreach($areaNames as $areaName){
+            $form->addButton((string)$areaName);
         }
-        // Else, cancel removal
-    });
 
-    $form->setTitle((string)$this->getMessage("confirm_remove_title"));
-    $form->setContent((string)$this->getMessage("confirm_remove_content", ["name" => $areaName]));
-    
-    // Add confirm button
-    if(isset($this->messages["gui_buttons"][0])){
-        $form->addButton((string)$this->messages["gui_buttons"][0]);
-    } else {
-        $form->addButton("Confirm");
-    }
-    
-    // Add cancel button
-    if(isset($this->messages["gui_buttons"][4])){
-        $form->addButton((string)$this->messages["gui_buttons"][4]);
-    } else {
-        $form->addButton("Cancel");
+        // Add cancel button
+        if(isset($this->messages["gui_buttons"][4])){
+            $form->addButton((string)$this->messages["gui_buttons"][4]);
+        } else {
+            $form->addButton("Cancel");
+        }
+
+        $form->sendToPlayer($sender);
     }
 
-    $form->sendToPlayer($player);
-}
+    /**
+     * Confirms the removal of an area.
+     *
+     * @param Player $player
+     * @param string $areaName
+     */
+    private function confirmRemoveArea(Player $player, string $areaName) : void {
+        $form = new SimpleForm(function (Player $player, ?int $data) use ($areaName) {
+            if($data === null){
+                return;
+            }
+
+            if($data === 0){
+                // Confirm removal
+                if(isset($this->regions[$areaName])){
+                    unset($this->regions[$areaName]);
+                    $this->saveRegions();
+                    $player->sendMessage(TextFormat::GREEN . $this->getMessage("remove_success", ["name" => $areaName]));
+                } else {
+                    $player->sendMessage(TextFormat::RED . $this->getMessage("region_not_found", ["name" => $areaName]));
+                }
+            }
+            // Otherwise, cancel removal
+        });
+
+        $form->setTitle((string)$this->getMessage("confirm_remove_title"));
+        $form->setContent((string)$this->getMessage("confirm_remove_content", ["name" => $areaName]));
+        
+        // Add confirm button
+        if(isset($this->messages["gui_buttons"][0])){
+            $form->addButton((string)$this->messages["gui_buttons"][0]);
+        } else {
+            $form->addButton("Confirm");
+        }
+        
+        // Add cancel button
+        if(isset($this->messages["gui_buttons"][4])){
+            $form->addButton((string)$this->messages["gui_buttons"][4]);
+        } else {
+            $form->addButton("Cancel");
+        }
+
+        $form->sendToPlayer($player);
+    }
 
     /**
      * Opens the form to edit an existing area.
      *
-     * @param CommandSender $sender The sender to whom the form is sent.
+     * @param CommandSender $sender
      */
     private function openEditAreaForm(CommandSender $sender) : void {
         if(!$sender instanceof Player){
@@ -446,8 +447,8 @@ private function confirmRemoveArea(Player $player, string $areaName) : void {
     /**
      * Opens the form to edit area details (name, message, pos1, pos2).
      *
-     * @param Player $player The player who is editing the area.
-     * @param string $areaName The name of the area to edit.
+     * @param Player $player
+     * @param string $areaName
      */
     private function openEditAreaDetailsForm(Player $player, string $areaName) : void {
         $currentRegion = $this->regions[$areaName];
@@ -459,7 +460,6 @@ private function confirmRemoveArea(Player $player, string $areaName) : void {
                 return;
             }
 
-            // Safely retrieve and trim inputs, providing default empty strings if null
             $newName = strtolower(trim($data[0] ?? ''));
             $newName = empty($newName) ? $areaName : $newName;
             $newMessage = trim($data[1] ?? '');
@@ -478,25 +478,26 @@ private function confirmRemoveArea(Player $player, string $areaName) : void {
                 $this->regions[$newName] = $this->regions[$areaName];
                 unset($this->regions[$areaName]);
                 $this->regions[$newName]["permission"] = "customareas.entry.$newName";
-                $areaName = $newName;
             }
 
             // Update message
+            $finalName = ($newName !== $areaName) ? $newName : $areaName;
             if(!empty($newMessage)){
-                $this->regions[$areaName]["message"] = $newMessage;
+                $this->regions[$finalName]["message"] = $newMessage;
             } else {
-                $this->regions[$areaName]["message"] = $this->getMessage("region_message_default", ["name" => $areaName]);
+                $this->regions[$finalName]["message"] =
+                    $this->getMessage("region_message_default", ["name" => $finalName]);
             }
 
             // Handle position updates
             if($changePos1 || $changePos2){
                 $this->playerData[$player->getName()] = [
                     "state" => "editing",
-                    "area_name" => $areaName,
+                    "area_name" => $finalName,
                     "step" => "pos1",
                     "change_pos1" => $changePos1,
                     "change_pos2" => $changePos2,
-                    "world" => $this->regions[$areaName]["world"]
+                    "world" => $this->regions[$finalName]["world"]
                 ];
                 if($changePos1){
                     $player->sendMessage(TextFormat::GREEN . $this->getMessage("pos1_prompt"));
@@ -510,11 +511,11 @@ private function confirmRemoveArea(Player $player, string $areaName) : void {
 
             // Save changes
             $this->saveRegions();
-            $player->sendMessage(TextFormat::GREEN . $this->getMessage("edit_success", ["name" => $areaName]));
+            $player->sendMessage(TextFormat::GREEN . $this->getMessage("edit_success", ["name" => $finalName]));
         });
 
         $form->setTitle($this->getMessage("edit_area_title"));
-        $form->addLabel($this->getMessage("edit_area_content", ["name" => $areaName])); // Replaced setContent with addLabel
+        $form->addLabel($this->getMessage("edit_area_content", ["name" => $areaName]));
         $form->addInput($this->getMessage("edit_area_name_prompt"), "New Area Name", $areaName);
         $form->addInput($this->getMessage("region_message_prompt"), "Region Entry Message", $currentMessage);
         $form->addToggle($this->getMessage("edit_area_change_pos1_prompt"), false);
@@ -525,7 +526,7 @@ private function confirmRemoveArea(Player $player, string $areaName) : void {
     /**
      * Handles the list command to display all defined areas.
      *
-     * @param CommandSender $sender The sender of the command.
+     * @param CommandSender $sender
      */
     private function handleList(CommandSender $sender) : void {
         if(empty($this->regions)){
@@ -535,7 +536,8 @@ private function confirmRemoveArea(Player $player, string $areaName) : void {
 
         $message = TextFormat::YELLOW . $this->getMessage("list_areas");
         foreach($this->regions as $name => $data){
-            $message .= "\n" . TextFormat::GREEN . "- $name " . TextFormat::GRAY . "(World: {$data['world']}, Permission: {$data['permission']})";
+            $message .= "\n" . TextFormat::GREEN . "- $name " .
+                TextFormat::GRAY . "(World: {$data['world']}, Permission: {$data['permission']})";
         }
         $sender->sendMessage($message);
     }
@@ -543,7 +545,7 @@ private function confirmRemoveArea(Player $player, string $areaName) : void {
     /**
      * Handles setting position 1 for creating or editing an area.
      *
-     * @param CommandSender $sender The sender executing the command.
+     * @param CommandSender $sender
      */
     private function handlePos1(CommandSender $sender) : void {
         if(!$sender instanceof Player){
@@ -560,7 +562,7 @@ private function confirmRemoveArea(Player $player, string $areaName) : void {
         $step = $this->playerData[$sender->getName()]["step"];
 
         if(($state === "creating" && $step !== "pos1") || ($state === "editing" && $step !== "pos1")){
-            $sender->sendMessage(TextFormat::RED . "You are not setting position 1.");
+            $sender->sendMessage(TextFormat::RED . "You are not setting position 1 at this moment.");
             return;
         }
 
@@ -583,7 +585,7 @@ private function confirmRemoveArea(Player $player, string $areaName) : void {
                 $world = $this->playerData[$playerName]["world"];
 
                 if(!$this->getServer()->getWorldManager()->isWorldLoaded($world)){
-                    $sender->sendMessage(TextFormat::RED . "The world '$world' is not loaded. Cannot update area.");
+                    $sender->sendMessage(TextFormat::RED . "The world '$world' is not loaded. Cannot update the area.");
                     unset($this->playerData[$playerName]);
                     return;
                 }
@@ -599,7 +601,7 @@ private function confirmRemoveArea(Player $player, string $areaName) : void {
     /**
      * Handles setting position 2 for creating or editing an area.
      *
-     * @param CommandSender $sender The sender executing the command.
+     * @param CommandSender $sender
      */
     private function handlePos2(CommandSender $sender) : void {
         if(!$sender instanceof Player){
@@ -616,7 +618,7 @@ private function confirmRemoveArea(Player $player, string $areaName) : void {
         $step = $this->playerData[$sender->getName()]["step"];
 
         if(($state === "creating" && $step !== "pos2") || ($state === "editing" && $step !== "pos2")){
-            $sender->sendMessage(TextFormat::RED . "You are not setting position 2.");
+            $sender->sendMessage(TextFormat::RED . "You are not setting position 2 at this moment.");
             return;
         }
 
@@ -635,7 +637,7 @@ private function confirmRemoveArea(Player $player, string $areaName) : void {
         $world = $this->playerData[$playerName]["world"];
 
         if(!$this->getServer()->getWorldManager()->isWorldLoaded($world)){
-            $sender->sendMessage(TextFormat::RED . "The world '$world' is not loaded. Cannot create or edit area.");
+            $sender->sendMessage(TextFormat::RED . "The world '$world' is not loaded. Cannot create or edit the area.");
             unset($this->playerData[$playerName]);
             return;
         }
@@ -676,7 +678,7 @@ private function confirmRemoveArea(Player $player, string $areaName) : void {
     /**
      * Handles player movement to enforce region permissions and display messages.
      *
-     * @param PlayerMoveEvent $event The event triggered when a player moves.
+     * @param PlayerMoveEvent $event
      */
     public function onPlayerMove(PlayerMoveEvent $event) : void {
         $player = $event->getPlayer();
@@ -693,7 +695,7 @@ private function confirmRemoveArea(Player $player, string $areaName) : void {
                 // Debug log
                 $this->getLogger()->info("Player $playerName entered region $name.");
 
-                // Check permissions using hasPermission
+                // Check permission
                 if(!$player->hasPermission($region["permission"])){
                     $this->getLogger()->info("Player $playerName does NOT have permission {$region['permission']} to enter region $name.");
                     $event->cancel();
@@ -709,7 +711,7 @@ private function confirmRemoveArea(Player $player, string $areaName) : void {
                     }
                 }
             } else {
-                // Remove the message if the player leaves the region
+                // The player is not inside this region anymore, reset message
                 if(isset($this->messageShown[$playerName][$name])){
                     unset($this->messageShown[$playerName][$name]);
                 }
@@ -720,31 +722,14 @@ private function confirmRemoveArea(Player $player, string $areaName) : void {
     /**
      * Checks if a position is inside a defined region.
      *
-     * @param Vector3 $pos The position to check.
-     * @param Vector3 $min The minimum corner of the region.
-     * @param Vector3 $max The maximum corner of the region.
-     * @return bool Returns true if the position is inside the region.
+     * @param Vector3 $pos
+     * @param Vector3 $min
+     * @param Vector3 $max
+     * @return bool
      */
     private function isInside(Vector3 $pos, Vector3 $min, Vector3 $max) : bool {
         return $pos->x >= min($min->x, $max->x) && $pos->x <= max($min->x, $max->x) &&
                $pos->y >= min($min->y, $max->y) && $pos->y <= max($min->y, $max->y) &&
                $pos->z >= min($min->z, $max->z) && $pos->z <= max($min->z, $max->z);
     }
-
-    /**
-     * Displays the ASCII art startup message.
-     */
-    private function displayStartupMessage() : void {
-        $asciiArt = <<<EOT
-           ____                 _                            _                                
-          / ___|  _   _   ___  | |_    ___    _ __ ___      / \     _ __    ___    __ _   ___ 
-         | |     | | | | / __| | __|  / _ \  | '_  _ \    / _ \   | '__|  / _ \  / _ | / __|
-         | |___  | |_| | \__ \ | |_  | (_) | | | | | | |  / ___ \  | |    |  __/ | (_| | \__ \
-          \____|  \__,_| |___/  \__|  \___/  |_| |_| |_| /_/   \_\ |_|     \___|  \__,_| |___/
-                                                                                by SoyDavs
-    EOT;
-
-        $this->getLogger()->info(TextFormat::AQUA . $asciiArt);
-    }
-
 }
