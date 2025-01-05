@@ -42,7 +42,6 @@ class Main extends PluginBase implements Listener {
         $this->loadMessages();
         $this->loadRegions();
         $this->getServer()->getPluginManager()->registerEvents($this, $this);
-        $this->getLogger()->info(TextFormat::GREEN . "CustomAreas by SoyDavs has been enabled.");
     }
 
     /**
