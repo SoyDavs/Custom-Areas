@@ -3,6 +3,8 @@ version: 2.0.0
 main: 'CustomAreas\Main'
 api: [5.0.0]
 author: SoyDavs
+depend:
+  - FormsUI
 description: >
   A powerful plugin for server administrators to enhance region security.
   Restricts access to designated areas, ensuring only players with specific
